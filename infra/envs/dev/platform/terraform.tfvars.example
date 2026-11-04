@@ -1,0 +1,6 @@
+# Copie para terraform.tfvars (ignorado pelo Git) e preencha.
+subscription_id = "00000000-0000-0000-0000-000000000000"
+prefix          = "lkh"
+location        = "brazilsouth"
+monthly_budget  = 10
+alert_emails    = ["voce@exemplo.com"]

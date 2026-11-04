@@ -1,0 +1,6 @@
+# Preencha com as saidas de ../platform (terraform output).
+workspace_url        = "adb-0000000000000000.0.azuredatabricks.net"
+access_connector_id  = "/subscriptions/.../resourceGroups/rg-lkh-dev/providers/Microsoft.Databricks/accessConnectors/ac-lkh-dev"
+storage_account_name = "stlkhdevxxxxx"
+data_engineers_group = "data-engineers"
+data_analysts_group  = "data-analysts"

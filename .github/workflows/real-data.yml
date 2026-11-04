@@ -1,0 +1,61 @@
+name: dados reais (INMET + IBGE)
+
+# Roda o pipeline inteiro, em Delta, sobre arquivos reais do INMET e a
+# tabela de municipios do IBGE. Manual, porque baixa o zip anual do
+# INMET. A saida (metricas e amostra da gold) fica no resumo da
+# execucao e como artefato.
+
+on:
+  workflow_dispatch:
+    inputs:
+      year:
+        description: Ano do arquivo historico do INMET
+        default: "2024"
+      stations:
+        description: Codigos de estacao separados por virgula
+        default: "A701,A652,A001,A801"
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - run: pip install -r requirements-dev.txt
+
+      - name: baixar amostra
+        run: python scripts/fetch_sample.py --year "${{ inputs.year }}" --stations "${{ inputs.stations }}" --out data/raw
+
+      - name: bronze -> silver -> gold
+        env:
+          LAKEHOUSE_FORMAT: delta
+        run: |
+          set -o pipefail
+          for job in bronze_ingest silver_conform gold_metrics; do
+            python "jobs/$job.py" --input data/raw/inmet --reference data/raw/municipios.csv --lake lake | tee -a metricas.jsonl
+          done
+
+      - name: resumo
+        env:
+          LAKEHOUSE_FORMAT: delta
+        run: python scripts/summary.py --lake lake --metrics metricas.jsonl >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evidencia-dados-reais
+          path: |
+            metricas.jsonl
+            lake/gold/
+          retention-days: 30
